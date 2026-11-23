@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JOMO AI — Workspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-canvas: #0d0e11;
+      --bg-surface: #14161b;
+      --bg-elevated: #1c1f26;
+      --border-subtle: #262a34;
+      --text-primary: #f1f3f5;
+      --text-secondary: #9aa1b0;
+      --accent: #d4a359;
+      --accent-dim: rgba(212, 163, 89, 0.14);
+      --danger: #e05252;
+      --danger-dim: rgba(224, 82, 82, 0.14);
+      --ok: #3ea873;
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-serif: 'Amiri', Georgia, serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      overflow: hidden;
+    }
+
+    /* Layout */
+    .app-shell {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 268px;
+      background: var(--bg-surface);
+      border-inline-end: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      transition: width 0.18s ease;
+      flex-shrink: 0;
+    }
+    .sidebar.collapsed { width: 64px; }
+    .sidebar.collapsed .hide-collapsed { display: none; }
+
+    .sidebar-header {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .brand {
+      font-family: var(--font-serif);
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand span { color: var(--accent); }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      border-radius: 6px;
+      padding: 6px 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .icon-btn:hover { background: var(--bg-elevated); color: var(--text-primary); }
+
+    .new-chat-wrap { padding: 12px; }
+    .btn-new-chat {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-new-chat:hover { border-color: var(--accent); }
+
+    .nav-list { padding: 0 8px; display: flex; flex-direction: column; gap: 2px; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-align: start;
+    }
+    .nav-item:hover, .nav-item.active { background: var(--bg-elevated); color: var(--text-primary); }
+    .badge {
+      font-size: 0.68rem;
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--text-secondary);
+    }
+
+    .history-section {
+      flex: 1;
+      overflow-y: auto;
+      margin-top: 12px;
+      padding: 10px 8px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .history-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+      padding: 0 10px 8px;
+    }
+    .conv-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      gap: 6px;
+    }
+    .conv-item:hover, .conv-item.active { background: var(--bg-elevated); color: var(--text-primary); }
+    .conv-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .conv-del {
+      opacity: 0;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .conv-item:hover .conv-del { opacity: 1; }
+    .conv-del:hover { color: var(--danger); }
+
+    .sidebar-footer {
+      padding: 10px 8px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    /* Main Area */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .topbar {
+      height: 56px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      gap: 12px;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .workspace-label {
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 99px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); }
+    .dot.ready { background: var(--ok); }
+
+    .lang-switch { display: flex; gap: 4px; }
+    .lang-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      font-size: 0.78rem;
+      padding: 4px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .lang-btn.active {
+      background: var(--bg-elevated);
+      border-color: var(--border-subtle);
+      color: var(--accent);
+    }
+
+    /* Banner */
+    .notice-banner {
+      background: rgba(212, 163, 89, 0.1);
+      border-bottom: 1px solid rgba(212, 163, 89, 0.28);
+      color: #f3d299;
+      padding: 9px 20px;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .notice-banner.hidden { display: none; }
+    .btn-link {
+      background: none;
+      border: 1px solid rgba(212, 163, 89, 0.45);
+      color: #f3d299;
+      padding: 3px 9px;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    /* Home / Chat Feed */
+    .canvas {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+    }
+    .home-hero {
+      margin: auto;
+      width: 100%;
+      max-width: 740px;
+      text-align: center;
+    }
+    .home-hero h1 {
+      font-family: var(--font-serif);
+      font-size: 2.1rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: var(--text-primary);
+    }
+
+    .messages-wrap {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .msg-card {
+      padding: 16px 18px;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+    }
+    .msg-card.assistant {
+      background: transparent;
+      border-color: transparent;
+      padding-inline: 4px;
+    }
+    .msg-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.74rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    .msg-body {
+      font-size: 0.94rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg-body pre {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 12px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.83rem;
+      margin: 10px 0;
+      direction: ltr;
+      text-align: left;
+    }
+    .msg-error {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--danger-dim);
+      border: 1px solid rgba(224, 82, 82, 0.35);
+      color: #f4a6a6;
+      font-size: 0.82rem;
+    }
+    .msg-actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+    }
+    .mini-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 4px 9px;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .mini-btn:hover { color: var(--text-primary); border-color: var(--accent); }
+
+    /* Composer */
+    .composer-dock {
+      padding: 12px 16px 18px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-canvas);
+    }
+    .composer-box {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: start;
+    }
+    .composer-box:focus-within { border-color: var(--accent); }
+    .composer-textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.93rem;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+      min-height: 64px;
+      max-height: 220px;
+    }
+    .attachment-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .att-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      color: var(--text-secondary);
+    }
+    .composer-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .toolbar-left { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+    .mode-group {
+      display: inline-flex;
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 7px;
+      padding: 2px;
+    }
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.76rem;
+      padding: 4px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .mode-btn.active { background: var(--bg-elevated); color: var(--text-primary); font-weight: 500; }
+
+    .task-chip {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 0.76rem;
+      padding: 4px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .task-chip.active {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .send-btn {
+      background: var(--accent);
+      color: #0d0e11;
+      border: none;
+      border-radius: 7px;
+      padding: 7px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .stop-btn {
+      background: var(--danger-dim);
+      color: #f4a6a6;
+      border: 1px solid rgba(224, 82, 82, 0.4);
+      border-radius: 7px;
+      padding: 7px 14px;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .modal-title { font-size: 1rem; font-weight: 600; }
+    .form-group { margin-bottom: 12px; }
+    .form-label { display: block; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 5px; }
+    .form-input, .form-select {
+      width: 100%;
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 8px 10px;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--accent); }
+    .help-text { font-size: 0.74rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
+
+    /* Sub-workspace view */
+    .subview-card {
+      margin: auto;
+      max-width: 480px;
+      text-align: center;
+      padding: 28px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; z-index: 50; height: 100%; }
+      .sidebar.collapsed { width: 0; border: none; overflow: hidden; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand hide-collapsed">JOMO <span>AI</span></div>
+        <button id="toggleSidebarBtn" class="icon-btn" title="Toggle Sidebar">☰</button>
+      </div>
+
+      <div class="new-chat-wrap">
+        <button id="newChatBtn" class="btn-new-chat">
+          <span>+</span>
+          <span class="hide-collapsed" data-i18n="newChat">New Chat</span>
+        </button>
+      </div>
+
+      <nav class="nav-list">
+        <button class="nav-item" id="cmdTriggerBtn">
+          <span class="hide-collapsed" data-i18n="search">Search</span>
+          <span class="badge hide-collapsed">Ctrl+K</span>
+        </button>
+        <button class="nav-item" data-view="library">
+          <span class="hide-collapsed" data-i18n="library">Library</span>
+          <span class="badge hide-collapsed">M2</span>
+        </button>
+        <button class="nav-item" data-view="projects">
+          <span class="hide-collapsed" data-i18n="projects">Projects</span>
+          <span class="badge hide-collapsed">M6</span>
+        </button>
+        <button class="nav-item" data-view="agents">
+          <span class="hide-collapsed" data-i18n="agents">Agents</span>
+          <span class="badge hide-collapsed">M4</span>
+        </button>
+        <button class="nav-item" data-view="studio">
+          <span class="hide-collapsed" data-i18n="studio">Studio</span>
+          <span class="badge hide-collapsed">M5</span>
+        </button>
+        <button class="nav-item" data-view="automations">
+          <span class="hide-collapsed" data-i18n="automations">Automations</span>
+          <span class="badge hide-collapsed">M6</span>
+        </button>
+      </nav>
+
+      <div class="history-section hide-collapsed">
+        <div class="history-title" data-i18n="history">Conversations</div>
+        <div id="conversationList"></div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="nav-item" id="openSettingsBtn">
+          <span class="hide-collapsed" data-i18n="settings">Settings &amp; Provider</span>
+          <span>⚙</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-area">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="mobileMenuBtn" class="icon-btn">☰</button>
+          <span id="workspaceTitle" class="workspace-label">JOMO AI Workspace</span>
+          <span class="status-pill" id="providerStatusPill">
+            <span class="dot" id="providerDot"></span>
+            <span id="providerStatusText">Not Configured</span>
+          </span>
+        </div>
+
+        <div class="lang-switch">
+          <button class="lang-btn active" data-lang="en">English</button>
+          <button class="lang-btn" data-lang="ar">العربية</button>
+          <button class="lang-btn" data-lang="fr">Français</button>
+        </div>
+      </header>
+
+      <div id="unconfiguredBanner" class="notice-banner">
+        <span data-i18n="unconfiguredBanner">No live AI provider is connected. Configure Ollama (local/free) or an OpenAI-compatible API endpoint in Settings to stream real responses.</span>
+        <button class="btn-link" id="bannerConfigBtn" data-i18n="configureNow">Configure</button>
+      </div>
+
+      <section id="canvasArea" class="canvas"></section>
+
+      <div id="composerDock" class="composer-dock" style="display:none;"></div>
+    </main>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" data-i18n="settingsTitle">Provider &amp; Workspace Settings</div>
+        <button class="icon-btn" id="closeSettingsBtn">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="providerPreset">Provider Preset</label>
+        <select id="providerPresetSelect" class="form-select">
+          <option value="ollama">Ollama Local (Free — http://localhost:11434/v1)</option>
+          <option value="groq">Groq Cloud (https://api.groq.com/openai/v1)</option>
+          <option value="openrouter">OpenRouter (https://openrouter.ai/api/v1)</option>
+          <option value="custom">Custom OpenAI-Compatible Endpoint</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Base URL</label>
+        <input id="providerBaseUrl" class="form-input" placeholder="http://localhost:11434/v1" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Model ID</label>
+        <input id="providerModelId" class="form-input" placeholder="qwen2.5:7b" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">API Key (Optional for local Ollama)</label>
+        <input id="providerApiKey" type="password" class="form-input" placeholder="sk-... or leave blank for Ollama" />
+        <div class="help-text" data-i18n="securityNote">
+          Stored only in your browser session storage for standalone local use. In production deployments, keep keys strictly on the backend server.
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+        <button class="mini-btn" id="testConnectionBtn" data-i18n="testConnection">Test Connection</button>
+        <button class="send-btn" id="saveSettingsBtn" data-i18n="save">Save</button>
+      </div>
+      <div id="settingsFeedback" class="help-text" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- Command Palette Modal -->
+  <div id="cmdModal" class="modal-backdrop">
+    <div class="modal-card" style="padding:0; overflow:hidden;">
+      <input id="cmdInput" class="form-input" style="border:none; border-bottom:1px solid var(--border-subtle); border-radius:0; padding:14px 16px;" placeholder="Search conversations or actions..." />
+      <div id="cmdResults" style="max-height:280px; overflow-y:auto; padding:8px;"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const I18N = {
+        en: {
+          dir: 'ltr',
+          newChat: 'New Chat',
+          search: 'Search',
+          library: 'Library',
+          projects: 'Projects',
+          agents: 'Agents',
+          studio: 'Studio',
+          automations: 'Automations',
+          history: 'Conversations',
+          settings: 'Settings & Provider',
+          welcome: 'What would you like to accomplish?',
+          placeholder: 'Ask anything, paste code, or attach a text file...',
+          send: 'Send',
+          stop: 'Stop',
+          copy: 'Copy',
+          copied: 'Copied',
+          retry: 'Retry',
+          modeAuto: 'Auto',
+          modePro: 'Pro',
+          shortcutResearch: 'Research',
+          shortcutCreate: 'Create',
+          shortcutCode: 'Code',
+          shortcutAnalyze: 'Analyze',
+          shortcutAgent: 'Agent',
+          unconfiguredBanner: 'No live AI provider is connected. Configure Ollama (local/free) or an OpenAI-compatible API endpoint in Settings to stream real responses.',
+          configureNow: 'Configure',
+          settingsTitle: 'Provider & Workspace Settings',
+          providerPreset: 'Provider Preset',
+          securityNote: 'Stored only in your browser session storage for standalone local use. In production deployments, keep keys strictly on the backend server.',
+          testConnection: 'Test Connection',
+          save: 'Save',
+          milestonePending: 'This module is scheduled for an upcoming milestone. No simulated functionality is shown.'
+        },
+        ar: {
+          dir: 'rtl',
+          newChat: 'محادثة جديدة',
+          search: 'بحث',
+          library: 'المكتبة',
+          projects: 'المشاريع',
+          agents: 'الوكلاء',
+          studio: 'الاستوديو',
+          automations: 'الأتمتة',
+          history: 'المحادثات',
+          settings: 'الإعدادات والمزود',
+          welcome: 'ما الذي تود إنجازه اليوم؟',
+          placeholder: 'اطرح سؤالاً، الصق كوداً، أو أرفق ملفاً نصياً...',
+          send: 'إرسال',
+          stop: 'إيقاف',
+          copy: 'نسخ',
+          copied: 'تم النسخ',
+          retry: 'إعادة المحاولة',
+          modeAuto: 'تلقائي',
+          modePro: 'متقدم',
+          shortcutResearch: 'بحث معمق',
+          shortcutCreate: 'إنشاء',
+          shortcutCode: 'برمجة',
+          shortcutAnalyze: 'تحليل',
+          shortcutAgent: 'وكيل',
+          unconfiguredBanner: 'لا يوجد مزود ذكاء اصطناعي متصل حالياً. يرجى ضبط Ollama المحلي أو نقطة اتصال متوافقة مع OpenAI في الإعدادات.',
+          configureNow: 'إعداد الآن',
+          settingsTitle: 'إعدادات المزود ومساحة العمل',
+          providerPreset: 'مزود الخدمة',
+          securityNote: 'تُحفظ الإعدادات في الجلسة المحلية للمتصفح فقط للاستخدام الفردي. في بيئة الإنتاج يجب حفظ المفاتيح على الخادم.',
+          testConnection: 'اختبار الاتصال',
+          save: 'حفظ',
+          milestonePending: 'هذه الوحدة مبرمجة في المرحلة القادمة من التطوير. لا يتم عرض أي وظائف وهمية.'
+        },
+        fr: {
+          dir: 'ltr',
+          newChat: 'Nouvelle discussion',
+          search: 'Rechercher',
+          library: 'Bibliothèque',
+          projects: 'Projets',
+          agents: 'Agents',
+          studio: 'Studio',
+          automations: 'Automatisations',
+          history: 'Discussions',
+          settings: 'Paramètres & Fournisseur',
+          welcome: 'Que souhaitez-vous accomplir ?',
+          placeholder: 'Posez une question, collez du code ou joignez un fichier texte...',
+          send: 'Envoyer',
+          stop: 'Arrêter',
+          copy: 'Copier',
+          copied: 'Copié',
+          retry: 'Réessayer',
+          modeAuto: 'Auto',
+          modePro: 'Pro',
+          shortcutResearch: 'Recherche',
+          shortcutCreate: 'Créer',
+          shortcutCode: 'Code',
+          shortcutAnalyze: 'Analyser',
+          shortcutAgent: 'Agent',
+          unconfiguredBanner: 'Aucun fournisseur IA connecté. Configurez Ollama (local/gratuit) ou une API compatible OpenAI dans les paramètres.',
+          configureNow: 'Configurer',
+          settingsTitle: 'Paramètres du fournisseur',
+          providerPreset: 'Préréglage du fournisseur',
+          securityNote: 'Enregistré uniquement dans la session locale du navigateur. En production, conservez les clés côté serveur.',
+          testConnection: 'Tester la connexion',
+          save: 'Enregistrer',
+          milestonePending: 'Ce module est prévu pour une prochaine étape. Aucune fonctionnalité simulée n’est affichée.'
+        }
+      };
+
+      const PRESETS = {
+        ollama: { baseUrl: 'http://localhost:11434/v1', model: 'qwen2.5:7b' },
+        groq: { baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
+        openrouter: { baseUrl: 'https://openrouter.ai/api/v1', model: 'meta-llama/llama-3.3-70b-instruct:free' },
+        custom: { baseUrl: '', model: '' }
+      };
+
+      const state = {
+        lang: localStorage.getItem('jomo_lang') || 'en',
+        view: 'chat',
+        mode: 'auto',
+        taskType: 'chat',
+        conversations: JSON.parse(localStorage.getItem('jomo_convs_v1') || '[]'),
+        activeConvId: null,
+        attachments: [],
+        isStreaming: false,
+        abortController: null,
+        provider: JSON.parse(sessionStorage.getItem('jomo_provider_cfg') || 'null') || {
+          preset: 'ollama',
+          baseUrl: 'http://localhost:11434/v1',
+          model: 'qwen2.5:7b',
+          apiKey: '',
+          verified: false
+        }
+      };
+
+      function saveConversations() {
+        localStorage.setItem('jomo_convs_v1', JSON.stringify(state.conversations));
+      }
+
+      function saveProvider() {
+        sessionStorage.setItem('jomo_provider_cfg', JSON.stringify(state.provider));
+        updateProviderIndicator();
+      }
+
+      function t(key) {
+        return (I18N[state.lang] && I18N[state.lang][key]) || I18N.en[key] || key;
+      }
+
+      function applyLanguage() {
+        const dict = I18N[state.lang] || I18N.en;
+        document.documentElement.lang = state.lang;
+        document.documentElement.dir = dict.dir;
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+          const k = el.getAttribute('data-i18n');
+          if (dict[k]) el.textContent = dict[k];
+        });
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.lang === state.lang);
+        });
+        renderMain();
+      }
+
+      function updateProviderIndicator() {
+        const dot = document.getElementById('providerDot');
+        const txt = document.getElementById('providerStatusText');
+        const banner = document.getElementById('unconfiguredBanner');
+        const isConfigured = Boolean(state.provider.baseUrl && state.provider.model && (state.provider.verified || state.provider.apiKey));
+        dot.classList.toggle('ready', isConfigured);
+        txt.textContent = isConfigured ? `${state.provider.model}` : 'Not Configured';
+        banner.classList.toggle('hidden', isConfigured);
+      }
+
+      function renderSidebarHistory() {
+        const list = document.getElementById('conversationList');
+        list.innerHTML = '';
+        state.conversations.forEach(conv => {
+          const row = document.createElement('div');
+          row.className = 'conv-item' + (conv.id === state.activeConvId ? ' active' : '');
+          const title = document.createElement('span');
+          title.className = 'conv-title';
+          title.textContent = conv.title;
+          title.onclick = () => {
+            state.activeConvId = conv.id;
+            state.view = 'chat';
+            renderAll();
+          };
+          const del = document.createElement('button');
+          del.className = 'conv-del';
+          del.textContent = '×';
+          del.onclick = (e) => {
+            e.stopPropagation();
+            state.conversations = state.conversations.filter(c => c.id !== conv.id);
+            if (state.activeConvId === conv.id) state.activeConvId = null;
+            saveConversations();
+            renderAll();
+          };
+          row.appendChild(title);
+          row.appendChild(del);
+          list.appendChild(row);
+        });
+      }
+
+      function buildComposerHTML() {
+        const shortcuts = [
+          { id: 'research', label: t('shortcutResearch') },
+          { id: 'create', label: t('shortcutCreate') },
+          { id: 'code', label: t('shortcutCode') },
+          { id: 'analyze', label: t('shortcutAnalyze') },
+          { id: 'agent', label: t('shortcutAgent') }
+        ];
+        const attChips = state.attachments.map((a, idx) =>
+          `<span class="att-chip">📄 ${escapeHtml(a.name)} <button type="button" data-rm-att="${idx}" style="background:none;border:none;color:inherit;cursor:pointer;">×</button></span>`
+        ).join('');
+
+        return `
+          <div class="composer-box">
+            ${attChips ? `<div class="attachment-strip">${attChips}</div>` : ''}
+            <textarea id="promptInput" class="composer-textarea" placeholder="${escapeHtml(t('placeholder'))}"></textarea>
+            <div class="composer-toolbar">
+              <div class="toolbar-left">
+                <div class="mode-group">
+                  <button type="button" class="mode-btn ${state.mode === 'auto' ? 'active' : ''}" data-mode="auto">${t('modeAuto')}</button>
+                  <button type="button" class="mode-btn ${state.mode === 'pro' ? 'active' : ''}" data-mode="pro">${t('modePro')}</button>
+                </div>
+                <label class="task-chip" style="cursor:pointer;">
+                  + File
+                  <input id="fileAttachInput" type="file" accept=".txt,.md,.csv,.json,.js,.py,.html,.css" style="display:none;" />
+                </label>
+                ${shortcuts.map(s => `
+                  <button type="button" class="task-chip ${state.taskType === s.id ? 'active' : ''}" data-task="${s.id}">${s.label}</button>
+                `).join('')}
+              </div>
+              <div>
+                ${state.isStreaming
+                  ? `<button type="button" id="stopBtn" class="stop-btn">${t('stop')}</button>`
+                  : `<button type="button" id="sendBtn" class="send-btn">${t('send')}</button>`}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function bindComposerEvents(container) {
+        const input = container.querySelector('#promptInput');
+        const sendBtn = container.querySelector('#sendBtn');
+        const stopBtn = container.querySelector('#stopBtn');
+        const fileInput = container.querySelector('#fileAttachInput');
+
+        container.querySelectorAll('[data-mode]').forEach(btn => {
+          btn.onclick = () => {
+            state.mode = btn.dataset.mode;
+            renderMain();
+          };
+        });
+
+        container.querySelectorAll('[data-task]').forEach(btn => {
+          btn.onclick = () => {
+            state.taskType = state.taskType === btn.dataset.task ? 'chat' : btn.dataset.task;
+            renderMain();
+          };
+        });
+
+        container.querySelectorAll('[data-rm-att]').forEach(btn => {
+          btn.onclick = () => {
+            const idx = Number(btn.dataset.rmAtt);
+            state.attachments.splice(idx, 1);
+            renderMain();
+          };
+        });
+
+        if (fileInput) {
+          fileInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 200 * 1024) {
+              alert('File exceeds 200 KB text limit in Milestone 1.');
+              return;
+            }
+            const text = await file.text();
+            state.attachments.push({ name: file.name, content: text });
+            renderMain();
+          };
+        }
+
+        if (input) {
+          input.onkeydown = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSend(input.value);
+            }
+          };
+        }
+        if (sendBtn) sendBtn.onclick = () => handleSend(input.value);
+        if (stopBtn) stopBtn.onclick = () => state.abortController && state.abortController.abort();
+      }
+
+      function formatMessageContent(raw) {
+        const escaped = escapeHtml(raw);
+        return escaped.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function renderMain() {
+        const canvas = document.getElementById('canvasArea');
+        const dock = document.getElementById('composerDock');
+        const titleEl = document.getElementById('workspaceTitle');
+
+        document.querySelectorAll('.nav-item[data-view]').forEach(el => {
+          el.classList.toggle('active', el.dataset.view === state.view);
+        });
+
+        if (state.view !== 'chat') {
+          dock.style.display = 'none';
+          titleEl.textContent = t(state.view);
+          canvas.innerHTML = `
+            <div class="subview-card">
+              <h2 style="margin-bottom:10px; font-size:1.1rem;">${escapeHtml(t(state.view))}</h2>
+              <p style="font-size:0.86rem; color:var(--text-secondary); line-height:1.6;">${escapeHtml(t('milestonePending'))}</p>
+              <button class="btn-new-chat" style="margin-top:16px;" id="backToChatBtn">${escapeHtml(t('newChat'))}</button>
+            </div>
+          `;
+          document.getElementById('backToChatBtn').onclick = () => {
+            state.view = 'chat';
+            renderAll();
+          };
+          return;
+        }
+
+        const activeConv = state.conversations.find(c => c.id === state.activeConvId);
+        if (!activeConv) {
+          titleEl.textContent = 'JOMO AI Workspace';
+          dock.style.display = 'none';
+          canvas.innerHTML = `
+            <div class="home-hero">
+              <h1>${escapeHtml(t('welcome'))}</h1>
+              <div id="heroComposerMount">${buildComposerHTML()}</div>
+            </div>
+          `;
+          bindComposerEvents(document.getElementById('heroComposerMount'));
+          return;
+        }
+
+        titleEl.textContent = activeConv.title;
+        canvas.innerHTML = `<div class="messages-wrap" id="messagesWrap"></div>`;
+        const wrap = document.getElementById('messagesWrap');
+
+        activeConv.messages.forEach((msg) => {
+          const card = document.createElement('div');
+          card.className = 'msg-card ' + msg.role;
+          card.innerHTML = `
+            <div class="msg-meta">
+              <span>${msg.role === 'user' ? 'YOU' : 'JOMO AI'}</span>
+              <span>${msg.model ? escapeHtml(msg.model) : ''}</span>
+            </div>
+            <div class="msg-body">${formatMessageContent(msg.content)}</div>
+            ${msg.error ? `<div class="msg-error">${escapeHtml(msg.error)}</div>` : ''}
+            <div class="msg-actions">
+              <button class="mini-btn" data-copy-msg="${msg.id}">${escapeHtml(t('copy'))}</button>
+            </div>
+          `;
+          card.querySelector('[data-copy-msg]').onclick = (e) => {
+            navigator.clipboard.writeText(msg.content);
+            e.target.textContent = t('copied');
+            setTimeout(() => (e.target.textContent = t('copy')), 1200);
+          };
+          wrap.appendChild(card);
+        });
+
+        dock.style.display = 'block';
+        dock.innerHTML = buildComposerHTML();
+        bindComposerEvents(dock);
+        canvas.scrollTop = canvas.scrollHeight;
+      }
+
+      async function handleSend(rawText) {
+        const text = (rawText || '').trim();
+        if (!text || state.isStreaming) return;
+
+        let fullPrompt = text;
+        if (state.attachments.length > 0) {
+          const filesBlock = state.attachments
+            .map(f => `[Attached File: ${f.name}]\n${f.content}`)
+            .join('\n\n');
+          fullPrompt = `${filesBlock}\n\nUser Request: ${text}`;
+        }
+
+        let conv = state.conversations.find(c => c.id === state.activeConvId);
+        if (!conv) {
+          conv = {
+            id: 'conv_' + Date.now(),
+            title: text.slice(0, 46),
+            messages: []
+          };
+          state.conversations.unshift(conv);
+          state.activeConvId = conv.id;
+        }
+
+        conv.messages.push({
+          id: 'm_' + Date.now(),
+          role: 'user',
+          content: text,
+          rawPrompt: fullPrompt
+        });
+
+        const assistantMsg = {
+          id: 'm_' + (Date.now() + 1),
+          role: 'assistant',
+          content: '',
+          model: state.provider.model,
+          error: null
+        };
+        conv.messages.push(assistantMsg);
+        state.attachments = [];
+        state.isStreaming = true;
+        saveConversations();
+        renderAll();
+
+        if (!state.provider.baseUrl || !state.provider.model) {
+          assistantMsg.error = t('unconfiguredBanner');
+          state.isStreaming = false;
+          saveConversations();
+          renderMain();
+          return;
+        }
+
+        const controller = new AbortController();
+        state.abortController = controller;
+
+        try {
+          const apiMessages = [
+            {
+              role: 'system',
+              content: `You are JOMO AI. Active task mode: ${state.taskType}. Respond accurately and concisely in the user's language. Never fabricate citations or capabilities.`
+            },
+            ...conv.messages
+              .filter(m => m.id !== assistantMsg.id)
+              .map(m => ({ role: m.role, content: m.rawPrompt || m.content }))
+          ];
+
+          const headers = { 'Content-Type': 'application/json' };
+          if (state.provider.apiKey) {
+            headers['Authorization'] = `Bearer ${state.provider.apiKey}`;
+          }
+
+          const res = await fetch(`${state.provider.baseUrl.replace(/\/$/, '')}/chat/completions`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              model: state.provider.model,
+              messages: apiMessages,
+              stream: true
+            }),
+            signal: controller.signal
+          });
+
+          if (!res.ok) {
+            const errTxt = await res.text().catch(() => '');
+            throw new Error(`HTTP ${res.status}: ${errTxt.slice(0, 180) || res.statusText}`);
+          }
+
+          state.provider.verified = true;
+          saveProvider();
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith('data:')) continue;
+              const payload = trimmed.slice(5).trim();
+              if (payload === '[DONE]') continue;
+              try {
+                const json = JSON.parse(payload);
+                const delta = json.choices?.[0]?.delta?.content;
+                if (delta) {
+                  assistantMsg.content += delta;
+                  renderMain();
+                }
+              } catch (_) {}
+            }
+          }
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            assistantMsg.error = `Connection failed: ${err.message}. Verify that your endpoint (${state.provider.baseUrl}) is running and allows browser CORS, or run via a Next.js backend proxy.`;
+          }
+        } finally {
+          state.isStreaming = false;
+          state.abortController = null;
+          saveConversations();
+          renderAll();
+        }
+      }
+
+      function renderAll() {
+        renderSidebarHistory();
+        renderMain();
+      }
+
+      // Wire static UI controls
+      document.getElementById('toggleSidebarBtn').onclick = () => {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+      };
+      document.getElementById('mobileMenuBtn').onclick = () => {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+      };
+      document.getElementById('newChatBtn').onclick = () => {
+        state.activeConvId = null;
+        state.view = 'chat';
+        renderAll();
+      };
+      document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
+        btn.onclick = () => {
+          state.view = btn.dataset.view;
+          renderAll();
+        };
+      });
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.onclick = () => {
+          state.lang = btn.dataset.lang;
+          localStorage.setItem('jomo_lang', state.lang);
+          applyLanguage();
+        };
+      });
+
+      // Settings Modal
+      const settingsModal = document.getElementById('settingsModal');
+      const openSettings = () => {
+        document.getElementById('providerPresetSelect').value = state.provider.preset || 'ollama';
+        document.getElementById('providerBaseUrl').value = state.provider.baseUrl || '';
+        document.getElementById('providerModelId').value = state.provider.model || '';
+        document.getElementById('providerApiKey').value = state.provider.apiKey || '';
+        document.getElementById('settingsFeedback').textContent = '';
+        settingsModal.classList.add('open');
+      };
+      document.getElementById('openSettingsBtn').onclick = openSettings;
+      document.getElementById('bannerConfigBtn').onclick = openSettings;
+      document.getElementById('closeSettingsBtn').onclick = () => settingsModal.classList.remove('open');
+
+      document.getElementById('providerPresetSelect').onchange = (e) => {
+        const p = PRESETS[e.target.value];
+        if (p && e.target.value !== 'custom') {
+          document.getElementById('providerBaseUrl').value = p.baseUrl;
+          document.getElementById('providerModelId').value = p.model;
+        }
+      };
+
+      document.getElementById('saveSettingsBtn').onclick = () => {
+        state.provider = {
+          preset: document.getElementById('providerPresetSelect').value,
+          baseUrl: document.getElementById('providerBaseUrl').value.trim(),
+          model: document.getElementById('providerModelId').value.trim(),
+          apiKey: document.getElementById('providerApiKey').value.trim(),
+          verified: state.provider.verified
+        };
+        saveProvider();
+        settingsModal.classList.remove('open');
+      };
+
+      document.getElementById('testConnectionBtn').onclick = async () => {
+        const fb = document.getElementById('settingsFeedback');
+        const baseUrl = document.getElementById('providerBaseUrl').value.trim().replace(/\/$/, '');
+        const apiKey = document.getElementById('providerApiKey').value.trim();
+        fb.textContent = 'Testing endpoint...';
+        try {
+          const headers = {};
+          if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+          const res = await fetch(`${baseUrl}/models`, { headers });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          state.provider.verified = true;
+          saveProvider();
+          fb.style.color = '#3ea873';
+          fb.textContent = 'Connected successfully. Endpoint reachable.';
+        } catch (err) {
+          fb.style.color = '#f4a6a6';
+          fb.textContent = `Connection error: ${err.message}`;
+        }
+      };
+
+      // Command Palette
+      const cmdModal = document.getElementById('cmdModal');
+      const cmdInput = document.getElementById('cmdInput');
+      const openCmd = () => {
+        cmdModal.classList.add('open');
+        cmdInput.value = '';
+        renderCmdResults('');
+        cmdInput.focus();
+      };
+      function renderCmdResults(q) {
+        const box = document.getElementById('cmdResults');
+        const matches = state.conversations.filter(c => c.title.toLowerCase().includes(q.toLowerCase()));
+        box.innerHTML = `
+          <div class="conv-item" id="cmdNewChat" style="color:var(--accent);">+ ${escapeHtml(t('newChat'))}</div>
+          ${matches.map(c => `<div class="conv-item" data-cmd-conv="${c.id}">${escapeHtml(c.title)}</div>`).join('')}
+        `;
+        box.querySelector('#cmdNewChat').onclick = () => {
+          state.activeConvId = null;
+          state.view = 'chat';
+          cmdModal.classList.remove('open');
+          renderAll();
+        };
+        box.querySelectorAll('[data-cmd-conv]').forEach(el => {
+          el.onclick = () => {
+            state.activeConvId = el.dataset.cmdConv;
+            state.view = 'chat';
+            cmdModal.classList.remove('open');
+            renderAll();
+          };
+        });
+      }
+      document.getElementById('cmdTriggerBtn').onclick = openCmd;
+      cmdInput.oninput = (e) => renderCmdResults(e.target.value);
+      cmdModal.onclick = (e) => { if (e.target === cmdModal) cmdModal.classList.remove('open'); };
+      window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          cmdModal.classList.contains('open') ? cmdModal.classList.remove('open') : openCmd();
+        } else if (e.key === 'Escape') {
+          cmdModal.classList.remove('open');
+          settingsModal.classList.remove('open');
+        }
+      });
+
+      // Init
+      updateProviderIndicator();
+      applyLanguage();
+      renderSidebarHistory();
+    })();
+  </script>
+</body>
+</html>
